@@ -11,6 +11,13 @@ Fredy is a self-hosted real estate finder for Germany. It scrapes German real es
 - Default port: 9998, default login: admin / admin
 - SQLite via `better-sqlite3` (synchronous - all DB ops are sync; only network I/O is async)
 
+## Fork Workflow
+
+- Develop custom features on `dev-custom`; `master` remains the default branch.
+- `origin/mergeUpstream` carries upstream syncs. `origin/TS-WIP` is obsolete.
+- Keep custom changes small and isolated, follow existing interfaces and style, and avoid unrelated
+  refactors or dependency changes so future upstream merges stay simple.
+
 ## Commands
 
 ```bash

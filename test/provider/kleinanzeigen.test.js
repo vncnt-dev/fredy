@@ -89,6 +89,10 @@ describe('#kleinanzeigen testsuite()', () => {
         expect(enriched.address).not.toBe('');
         expect(enriched.description).toBeTypeOf('string');
         expect(enriched.description).not.toBe('');
+        expect(enriched.rawResponse.detailStatus).toBe('captured');
+        expect(enriched.rawResponse.detail.format).toBe('html');
+        expect(enriched.images.length).toBeGreaterThan(1);
+        expect(new Set(enriched.images).size).toBe(enriched.images.length);
       },
       TEST_TIMEOUT,
     );
