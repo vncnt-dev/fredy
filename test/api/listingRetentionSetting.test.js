@@ -108,4 +108,16 @@ describe('POST /api/admin/generalSettings - listingRetentionDays', () => {
     expect(result.status).toBe(200);
     expect(upserted[0]).not.toHaveProperty('listingRetentionDays');
   });
+
+  it('trims and stores the listing media root', async () => {
+    const result = await post({ listingMediaRoot: '  /archive/listings  ' });
+    expect(result.status).toBe(200);
+    expect(upserted[0].listingMediaRoot).toBe('/archive/listings');
+  });
+
+  it('rejects an empty listing media root', async () => {
+    expect((await post({ listingMediaRoot: '' })).status).toBe(400);
+    expect(upserted).toEqual([]);
+    expect((await post({ listingMediaRoot: null })).status).toBe(400);
+  });
 });

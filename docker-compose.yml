@@ -10,6 +10,7 @@ services:
     volumes:
       - ./conf:/conf
       - ./db:/db
+      - ./listing-media:/db/listing-media
     ports:
       - "9998:9998"
     restart: unless-stopped

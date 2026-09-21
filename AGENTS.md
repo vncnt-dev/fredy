@@ -69,7 +69,8 @@ scheduler (every N minutes) or manual trigger via POST /api/jobs/:id/run
       8. storeListings()
       9. similarityCache.checkAndAddEntry() # cross-provider dedup (exact hash, then fingerprint)
       10. _filterBySpecs() + _filterByArea()
-      11. notify.send()                    # fan-out to all adapters
+      11. archiveListings()                # raw payload in SQLite, media bytes on disk
+      12. notify.send()                    # fan-out to all adapters
 ```
 
 ### Plugin systems
@@ -117,6 +118,7 @@ An adapter *configuration* is separate from the adapter itself: it is a row in `
 | SSE broker | `lib/services/sse/sse-broker.js` | Per-userId `Set<ServerResponse>`; heartbeat every 25s; pushes job status to UI |
 | Similarity cache | `lib/services/similarity-check/` | Per-job dedup, refreshed hourly. Two tiers: an exact SHA-256 over `jobId\|title\|price\|address`, then `listingFingerprint.js`, which matches the same flat across *different* providers on living space, rooms and location. Portals never agree on the headline, the address format, or what "price" means, so the hash tier alone never fired across providers |
 | Notification channels | `lib/services/storage/configuredAdapterStorage.js` | Saved adapter configurations (`configured_adapter`). Jobs store `[{configuredAdapterId}]`; `jobStorage` hydrates those back into `{id, name, fields}` on every read, so the pipeline never sees the indirection. Who may use vs. edit a channel: `lib/services/security/channelAccess.js` |
+| Listing archive | `lib/services/listings/listingArchive.js` | Stores provider captures and media metadata in SQLite after all filters; downloads bytes below the configurable `listingMediaRoot`; cascade deletes enqueue filesystem cleanup |
 | SqliteConnection | `lib/services/storage/SqliteConnection.js` | Singleton, WAL mode; `execute()`, `query()`, `withTransaction()` |
 | Migrations | `lib/services/storage/migrations/` | Numbered JS files each exporting `up(db)`; checksum-tracked in `schema_migrations` |
 | Extractor | `lib/services/extractor/` | Orchestrates Puppeteer + Cheerio; shared browser instance per job |

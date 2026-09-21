@@ -4,7 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mockFredy } from './utils.js';
+import { archivedListings, mockFredy } from './utils.js';
 import * as mockStore from './mocks/mockStore.js';
 import { get as getLastNotification, reset as resetNotifications } from './mocks/mockNotification.js';
 
@@ -74,6 +74,7 @@ async function notifiedIds({ listings, providerId, commuteFilter = null }) {
 describe("applying a job's commute filter", () => {
   beforeEach(() => {
     mockStore.deletedIds.length = 0;
+    archivedListings.length = 0;
     resetNotifications();
     mockStore.setUserSettings({ home_addresses: [WORK] });
   });
@@ -110,6 +111,16 @@ describe("applying a job's commute filter", () => {
     expect(mockStore.deletedIds).not.toContain('far');
   });
 
+  it('archives only the listings that survive the final commute filter', async () => {
+    await notifiedIds({
+      listings: [listing('near-archive', 12), listing('far-archive', 95)],
+      providerId: 'commute-archive',
+      commuteFilter: { action: 'notify', limits: { Work: 30 } },
+    });
+    expect(archivedListings).toHaveLength(1);
+    expect(archivedListings[0].provider).toBe('commute-archive');
+    expect(archivedListings[0].listings.map((entry) => entry.id)).toEqual(['near-archive']);
+  });
   it('soft-deletes the listing when the job asked for that instead', async () => {
     expect(
       await notifiedIds({

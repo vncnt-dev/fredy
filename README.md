@@ -57,6 +57,7 @@ On top of the listing itself, Fredy answers the three questions a portal will no
 docker run -d --name fredy \
   -v fredy_conf:/conf \
   -v fredy_db:/db \
+  -v fredy_media:/db/listing-media \
   -p 9998:9998 \
   ghcr.io/orangecoding/fredy:master
 ```
@@ -66,8 +67,10 @@ docker run -d --name fredy \
 > [!NOTE]
 > No configuration file is needed to start. Fredy creates `/conf/config.json` on first run if it is
 > missing. That file only holds the database path, everything else is configured in the Web UI and
-> stored in the database. Documents you upload live in the database too, so the `/db` volume above
-> is all you need to keep them, and every backup already contains them.
+> stored in the database. Documents you upload live in the database too. Images and documents that
+> Fredy downloads automatically are stored below `/db/listing-media` by default, with their
+> metadata in SQLite. Keep and back up both volumes. The media directory can be changed under
+> Administration → System; changing it does not move files already archived.
 
 `:master` follows the master branch; pin a release with its version tag instead, e.g.
 `ghcr.io/orangecoding/fredy:28.0.0`. Images are built for `linux/amd64` and `linux/arm64`. Logs:

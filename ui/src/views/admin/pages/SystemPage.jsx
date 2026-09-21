@@ -107,6 +107,14 @@ export default function SystemPage() {
           style={{ maxWidth: 200 }}
         />
       </SegmentPart>
+      <SegmentPart name={t('settings.listingMediaRoot')} helpText={t('settings.listingMediaRootHelp')}>
+        <Input
+          type="text"
+          placeholder={t('settings.listingMediaRootPlaceholder')}
+          value={form.listingMediaRoot}
+          onChange={(value) => setField('listingMediaRoot', value)}
+        />
+      </SegmentPart>
 
       <SegmentPart name={t('settings.sqlitePath')} helpText={t('settings.sqlitePathHelp')}>
         <Banner

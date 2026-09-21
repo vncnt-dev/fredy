@@ -12,6 +12,8 @@ export const providerConfig = JSON.parse(
   await readFile(new URL('./provider/testProvider.json', import.meta.url), 'utf-8'),
 );
 
+export const archivedListings = [];
+
 export const sseEvents = [];
 
 vi.mock('../lib/services/storage/listingsStorage.js', () => mockStore);
@@ -25,6 +27,13 @@ vi.mock('../lib/services/storage/jobStorage.js', () => ({
 vi.mock('../lib/services/sse/sse-broker.js', () => ({
   sendToUser: (userId, event, data) => {
     sseEvents.push({ userId, event, data });
+  },
+}));
+
+vi.mock('../lib/services/listings/listingArchive.js', () => ({
+  archiveListings: async (params) => {
+    archivedListings.push(params);
+    return params.listings;
   },
 }));
 vi.mock('../lib/notification/notify.js', () => ({ send }));

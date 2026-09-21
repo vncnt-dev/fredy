@@ -24,6 +24,7 @@ export const SYSTEM_FIELDS = [
   'listingRetentionDays',
   'listingAttachmentMaxMb',
   'listingAttachmentMaxPerListing',
+  'listingMediaRoot',
   'sqlitepath',
   'analyticsEnabled',
   'demoMode',
@@ -92,6 +93,7 @@ function toForm(settings) {
     listingRetentionDays: settings?.listingRetentionDays ?? 14,
     listingAttachmentMaxMb: settings?.listingAttachmentMaxMb ?? 10,
     listingAttachmentMaxPerListing: settings?.listingAttachmentMaxPerListing ?? 20,
+    listingMediaRoot: settings?.listingMediaRoot ?? 'listing-media',
     sqlitepath: settings?.sqlitepath ?? '',
     analyticsEnabled: settings?.analyticsEnabled === true,
     demoMode: settings?.demoMode === true,
@@ -215,6 +217,7 @@ export function useAdminSettings(settings) {
         payload.listingRetentionDays = Number(form.listingRetentionDays);
         payload.listingAttachmentMaxMb = Number(form.listingAttachmentMaxMb);
         payload.listingAttachmentMaxPerListing = Number(form.listingAttachmentMaxPerListing);
+        payload.listingMediaRoot = form.listingMediaRoot?.trim() ?? '';
       }
       if (fields.includes('connectivityLimitPerRun')) {
         payload.connectivityLimitPerRun = Number(form.connectivityLimitPerRun);
@@ -291,6 +294,9 @@ export function useAdminSettings(settings) {
             !Number.isInteger(Number(form.listingAttachmentMaxPerListing))
           ) {
             return t('settings.toastListingAttachmentInvalid');
+          }
+          if (nullOrEmpty(form.listingMediaRoot?.trim())) {
+            return t('settings.toastListingMediaRootEmpty');
           }
           return null;
         },
