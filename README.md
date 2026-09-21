@@ -72,6 +72,13 @@ docker run -d --name fredy \
 > metadata in SQLite. Keep and back up both volumes. The media directory can be changed under
 > Administration → System; changing it does not move files already archived.
 
+Open a listing in Fredy to browse its archived provider photos with thumbnails and a full-screen
+gallery. Downloaded provider documents appear below the gallery; you can delete a document there
+after confirmation. This removes its local file and media metadata, while retaining the original
+raw provider capture. Failed file removals are retried by the archive cleanup task. Your own uploads
+remain separate under **Own files** in the workspace. Provider media alone do not exempt a listing
+from automatic retention cleanup; uploaded files and watched listings keep their existing protection.
+
 `:master` follows the master branch; pin a release with its version tag instead, e.g.
 `ghcr.io/orangecoding/fredy:28.0.0`. Images are built for `linux/amd64` and `linux/arm64`. Logs:
 `docker logs fredy -f`.

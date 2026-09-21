@@ -1,0 +1,134 @@
+/*
+ * Copyright (c) 2026 by Christian Kellner.
+ * Licensed under Apache-2.0 with Commons Clause and Attribution/Naming Clause
+ */
+
+@import '../../../tokens.less';
+
+.listing-media {
+  display: flex;
+  flex-direction: column;
+  gap: @space-3;
+
+  &__counter {
+    position: absolute;
+    right: @space-3;
+    bottom: @space-3;
+    padding: @space-1 @space-2;
+    border-radius: @radius-pill;
+    color: @color-text;
+    background: @color-surface;
+    font-size: @text-sm;
+    line-height: 1.4;
+  }
+
+  &__thumbnails {
+    display: flex;
+    gap: @space-2;
+    overflow-x: auto;
+    padding: @space-1;
+    scrollbar-width: thin;
+  }
+
+  &__thumbnail {
+    width: 84px;
+    height: 60px;
+    flex: 0 0 84px;
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: @radius-input;
+    background: @color-fill-subtle;
+
+    &:hover {
+      border-color: @color-muted;
+    }
+
+    &--active {
+      border-color: @color-accent;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__documents {
+    margin-top: @space-3;
+  }
+
+  &__documents-hint {
+    display: block;
+    margin: -@space-2 0 @space-4;
+  }
+
+  &__document-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__document {
+    display: flex;
+    align-items: center;
+    gap: @space-2;
+    padding: @space-2;
+    border: 1px solid @color-border;
+    border-radius: @radius-input;
+
+    & + & {
+      margin-top: @space-2;
+    }
+  }
+
+  &__document-link {
+    display: flex;
+    align-items: center;
+    gap: @space-3;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover .listing-media__document-name {
+      text-decoration: underline;
+    }
+  }
+
+  &__document-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: @radius-input;
+    color: @color-muted;
+    background: @color-fill-subtle;
+    font-size: @text-lg;
+  }
+
+  &__document-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__document-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    &__thumbnail {
+      width: 72px;
+      height: 52px;
+      flex-basis: 72px;
+    }
+  }
+}

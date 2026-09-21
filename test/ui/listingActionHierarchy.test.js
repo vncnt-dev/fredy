@@ -61,8 +61,10 @@ describe('listing detail action hierarchy', () => {
       expect(at, control).toBeGreaterThan(-1);
       expect(actionBar.slice(at - 300, at + 300), control).toContain('aria-label');
     }
-    const expand = detail.indexOf('listing-detail__image-expand');
-    expect(detail.slice(expand, expand + 300)).toContain('aria-label');
+    const media = source('components/ListingMedia.jsx');
+    const expand = media.indexOf('listing-detail__image-expand');
+    expect(expand).toBeGreaterThan(-1);
+    expect(media.slice(expand, expand + 300)).toContain('aria-label');
   });
 
   it('states the watch button as a toggle rather than only colouring it', () => {

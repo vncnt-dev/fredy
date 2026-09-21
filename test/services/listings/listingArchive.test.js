@@ -6,6 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { mkdtemp, readFile, rm } from 'fs/promises';
+import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 
@@ -15,6 +16,10 @@ describe('internal listing archive', () => {
   let archiveListings;
   let archiveMediaItem;
   let drainListingArchiveCleanup;
+  let deleteArchivedMedia;
+  let listArchivedMedia;
+  let getArchivedMedia;
+  let archivedMediaLocalPath;
 
   beforeEach(async () => {
     db = new Database(':memory:');
@@ -72,8 +77,15 @@ describe('internal listing archive', () => {
       getSettings: async () => ({ listingMediaRoot: 'listing-media' }),
     }));
 
-    ({ archiveListings, archiveMediaItem, drainListingArchiveCleanup } =
-      await import('../../../lib/services/listings/listingArchive.js'));
+    ({
+      archiveListings,
+      archiveMediaItem,
+      drainListingArchiveCleanup,
+      deleteArchivedMedia,
+      listArchivedMedia,
+      getArchivedMedia,
+      archivedMediaLocalPath,
+    } = await import('../../../lib/services/listings/listingArchive.js'));
   });
 
   afterEach(async () => {
@@ -120,6 +132,73 @@ describe('internal listing archive', () => {
     expect(db.prepare(`SELECT COUNT(*) AS total FROM listing_archive_cleanup`).get().total).toBe(2);
     expect(await drainListingArchiveCleanup()).toBe(2);
     expect(db.prepare(`SELECT COUNT(*) AS total FROM listing_archive_cleanup`).get().total).toBe(0);
+  });
+
+  it('lists completed media and deletes only the selected file and metadata, preserving raw captures', async () => {
+    db.prepare(`INSERT INTO listings (id) VALUES ('listing-1')`).run();
+    await archiveListings({
+      listings: [
+        {
+          id: 'listing-1',
+          link: 'https://portal.example/listing-1',
+          images: ['https://cdn.example/photo.jpg'],
+          attachments: ['https://cdn.example/expose.pdf', 'https://cdn.example/missing.pdf'],
+          rawResponse: { detail: { body: { documents: ['expose.pdf'] } } },
+        },
+      ],
+      provider: 'provider',
+      jobId: 'job-1',
+      fetchImpl: async (url) =>
+        new Response('bytes', {
+          status: url.endsWith('missing.pdf') ? 404 : 200,
+          headers: { 'content-type': url.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg' },
+        }),
+    });
+    const original = db.prepare('SELECT * FROM listing_archive').all();
+    const media = listArchivedMedia('listing-1');
+    expect(media.map((item) => item.filename)).toEqual(['photo.jpg', 'expose.pdf']);
+    expect(media[0]).not.toHaveProperty('mediaRoot');
+    expect(media[0]).not.toHaveProperty('relativePath');
+    expect(media[0]).not.toHaveProperty('sourceUrl');
+    const document = media[1];
+    const file = archivedMediaLocalPath(getArchivedMedia(document.id, 'listing-1'));
+    expect(getArchivedMedia(document.id, 'another-listing')).toBeNull();
+    expect(await deleteArchivedMedia(document.id, 'another-listing')).toBe(false);
+    expect(await readFile(file, 'utf8')).toBe('bytes');
+    expect(await deleteArchivedMedia(document.id, 'listing-1')).toBe(true);
+    await expect(readFile(file)).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(getArchivedMedia(document.id, 'listing-1')).toBeNull();
+    expect(listArchivedMedia('listing-1')).toEqual([media[0]]);
+    expect(db.prepare('SELECT * FROM listing_archive').all()).toEqual(original);
+    expect(db.prepare('SELECT * FROM listing_archive_cleanup').all()).toEqual([]);
+    expect(await deleteArchivedMedia(document.id, 'listing-1')).toBe(false);
+  });
+
+  it('rejects paths outside the archived media root', () => {
+    expect(() => archivedMediaLocalPath({ mediaRoot: mediaBase, relativePath: '../outside.pdf' })).toThrow(/escapes/);
+  });
+
+  it('retains a durable cleanup entry when immediate file removal fails', async () => {
+    db.prepare(`INSERT INTO listings (id) VALUES ('listing-1')`).run();
+    await archiveListings({
+      listings: [{ id: 'listing-1', link: 'https://portal.example/1', attachments: ['https://cdn.example/file.pdf'] }],
+      provider: 'provider',
+      jobId: 'job-1',
+      fetchImpl: async () => new Response('bytes', { headers: { 'content-type': 'application/pdf' } }),
+    });
+    const document = listArchivedMedia('listing-1')[0];
+    const file = archivedMediaLocalPath(getArchivedMedia(document.id, 'listing-1'));
+    const unlink = vi.spyOn(fs, 'unlink').mockRejectedValueOnce(Object.assign(new Error('busy'), { code: 'EBUSY' }));
+    try {
+      expect(await deleteArchivedMedia(document.id, 'listing-1')).toBe(true);
+    } finally {
+      unlink.mockRestore();
+    }
+    expect(listArchivedMedia('listing-1')).toEqual([]);
+    expect(db.prepare('SELECT * FROM listing_archive_cleanup').all()).toHaveLength(1);
+    expect(await readFile(file, 'utf8')).toBe('bytes');
+    expect(await drainListingArchiveCleanup()).toBe(1);
+    await expect(readFile(file)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
   it('records unsafe downloads as failures instead of requesting them', async () => {
