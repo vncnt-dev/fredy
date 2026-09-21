@@ -37,7 +37,7 @@ yarn test:download-fixtures   # Re-download fresh provider HTML fixtures
 # Single test file
 TEST_MODE=offline npx vitest run test/provider/immoscout.test.js
 
-# Lint / Format
+# Lint / Format (oxlint + oxfmt, from the oxc toolchain)
 yarn lint && yarn lint:fix
 yarn format && yarn format:check
 
@@ -235,12 +235,17 @@ Two transports:
 1. **stdio** (`lib/mcp/stdio.js`) - for Claude Desktop/LM Studio; opens its own DB connection (main process need not be running)
 2. **HTTP** (`/api/mcp`) - authenticated via Bearer token (`mcp_token` column in `users` table)
 
-Tools: `list_jobs`, `get_job`, `list_listings`, `get_listing`, `get_current_date_time`. Responses are Markdown via `lib/mcp/mcpNormalizer.js`.
+Read tools: `list_jobs`, `get_job`, `list_listings`, `get_listing`, `get_photo_for_listing`, `calculate_financing`, `get_current_date_time`.
+Write tools: `add_listing_note`, `set_listing_notes`, `watch_listing`, `unwatch_listing`, and the four that create a job.
+Responses are Markdown via `lib/mcp/mcpNormalizer.js`.
+
+Job creation is a draft-based interview, not a single call: `lib/mcp/jobDraftStore.js` holds the state (in memory, per user, 30 min) and computes the next question; `lib/mcp/jobDraftContext.js` is the only part that reads the database and is what strips channel secrets. Write tools go through `authenticateWriteToolCall`, which also enforces the `mcp:write` OAuth scope and refuses non-admins while demo mode is on.
 
 ## Key Conventions
 
 - **ESM only** - `import`/`export` everywhere, no CommonJS
 - **JSDoc typedefs** (no TypeScript) in `lib/types/` - `listing.js`, `job.js`, `filter.js`, `providerConfig.js`
+- **Lint / format** - oxlint (`.oxlintrc.json`) and oxfmt (`.oxfmtrc.json`), both from the oxc toolchain. There is no ESLint and no Prettier; `eslint-disable` comments still work because oxlint reads them
 - **Copyright header** required on all `.js` files - enforced by `lint-staged` pre-commit hook via `copyright.js`
 - **`NoNewListingsWarning`** (`lib/errors.js`) is used as control flow to short-circuit the pipeline (not an error)
 - **Test fixtures** in `test/testFixtures/` - HTML/JSON snapshots per provider; `TEST_MODE=offline` mocks `puppeteerExtractor` and global `fetch` via `test/offlineFixtures.js`
