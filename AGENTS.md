@@ -18,6 +18,37 @@ Fredy is a self-hosted real estate finder for Germany. It scrapes German real es
 - Keep custom changes small and isolated, follow existing interfaces and style, and avoid unrelated
   refactors or dependency changes so future upstream merges stay simple.
 
+### Upstream merge procedure
+
+1. **Inspect with Git and `gh`.** Check the working tree, current branch, remotes and any merge
+   already in progress. Preserve local work; resume an existing merge instead of starting another.
+   Use `gh repo view orangecoding/fredy` and `gh api repos/orangecoding/fredy/commits/master`
+   to inspect upstream, and `gh pr view <number> --repo orangecoding/fredy` for relevant PR details.
+   GitHub inspection uses `gh`; fetching and merging the local branches uses Git.
+2. **Sync the existing merge branch, then merge into development.** Fetch `origin` and upstream
+   `master` (`git fetch https://github.com/orangecoding/fredy.git master` if there is no upstream
+   remote). Record the fetched SHA and the starting development SHA for the final comparison.
+   Switch to `mergeUpstream`, bring it up to date with `origin/mergeUpstream`, then merge the fetched
+   upstream SHA, using a fast-forward when possible. Switch to `dev-custom` and merge
+   `mergeUpstream` with `git merge --no-commit mergeUpstream` so the result can be reviewed and
+   checked before a merge commit. Do not reset branches, force-push or create replacement branches.
+3. **Fix conflicts and integration failures.** Preserve custom features while adopting upstream
+   changes. If upstream moved code, transfer the custom behaviour to its new home rather than
+   restoring the old implementation. Review automatic merges too: a clean textual merge can still
+   break behaviour or tests. Update affected tests and documentation, keeping fixes narrowly scoped.
+4. **Verify.** Install the dependencies from the updated lockfile when needed. Run the linter,
+   offline tests and format check, plus the frontend build when UI changes are included. Distinguish
+   environment failures from code failures and report any checks that remain blocked. Complete the
+   merge commit only when explicitly authorized under the commit rule below; pushing also requires
+   user authorization. Otherwise leave the resolved merge ready for review.
+5. **Summarize the result.** Always include a short, user-facing overview of the changes introduced
+   by this merge: new features/providers, changed behaviour, relevant fixes, and any configuration,
+   dependency or migration changes that affect operation. Base this on the incoming diff and PRs,
+   not just commit titles, and distinguish upstream additions from integration fixes. Briefly name
+   each Git conflict, its cause and its resolution; list test/integration failures separately.
+   Report verification results and the exact state: branches/SHAs, whether the merge is committed,
+   and whether anything was pushed. If there were no conflicts, say so.
+
 ## Commands
 
 ```bash
@@ -218,8 +249,15 @@ setting has one home, and a second copy is a second answer waiting to disagree w
 
 **Colours that are legitimately literal**: scrims and hairlines drawn over listing photography,
 which stays photography in both themes; `#000` used as a mask stencil; white on the accent, which
-is dark red either way. The map basemap is the light OpenFreeMap style in both themes, so map
-overlays follow the page rather than inverting.
+is dark red either way; and MapLibre paint and marker colours (`ui/src/components/map/overlayLayers.js`,
+`darkBasemapPaint.js`, `markerColors.js`), because a map layer or marker takes a colour string and
+cannot read a custom property. Anything drawn in HTML around the map (legend, badges) still uses
+the tokens.
+
+**The map follows the theme.** The vector basemap is OpenFreeMap's `bright` style in the light theme
+and its `dark` style in the dark theme; satellite imagery is the same in both (`isDarkBasemap` in
+`ui/src/components/map/Map.jsx`). The overlays carry one paint set per basemap (`OVERLAY_PAINT.light`
+and `.dark`), and the canvas is dimmed on a bright basemap and lifted on the dark one.
 
 **Tracking.** Switching theme fires `CHANGE_THEME_DARK` or `CHANGE_THEME_LIGHT`. A tracking event
 carries a feature name and nothing else (`trackPoi` sends one string), so any value worth reporting
